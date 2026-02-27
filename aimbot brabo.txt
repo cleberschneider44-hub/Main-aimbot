@@ -1,0 +1,363 @@
+--[[ 
+    AIMBOT HUB - V4.5 (CLEAN EDITION)
+    CRIADO POR ANÔNIMO
+    
+    CHANGELOG V4.5:
+    - Get Tools: REMOVIDO
+    - Auto Shoot: REMOVIDO
+    - Aimbot: Modo "Grude" original com Wall Check.
+    - ESP Elite: Visualização de vida e posição.
+    - FOV: Círculo visual funcional.
+    - Interface: Botões 100% funcionais.
+]]
+
+-- [ SERVIÇOS ]
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local CoreGui = game:GetService("CoreGui")
+local StarterGui = game:GetService("StarterGui")
+local Workspace = game:GetService("Workspace")
+
+-- [ VARIÁVEIS ]
+local LocalPlayer = Players.LocalPlayer
+local Camera = Workspace.CurrentCamera
+
+-- [ PROTEÇÃO ]
+if _G.AimbotHubV45Loaded then return end
+_G.AimbotHubV45Loaded = true
+
+-- [ CONFIGURAÇÕES ]
+local Settings = {
+    AimbotEnabled = false,
+    ESPEnabled = false,
+    AutoTeamCheck = false,
+    FOVRadius = 90,
+    FOVVisible = true,
+    TargetPart = "Head",
+    RGBElements = {}
+}
+
+-- [ SISTEMA RGB ]
+local function ApplyRGB(obj, property)
+    table.insert(Settings.RGBElements, {Object = obj, Property = property})
+end
+
+RunService.RenderStepped:Connect(function()
+    local hue = tick() % 5 / 5
+    local color = Color3.fromHSV(hue, 0.8, 1)
+    for i, item in ipairs(Settings.RGBElements) do
+        if item.Object and item.Object.Parent then
+            item.Object[item.Property] = color
+        else
+            table.remove(Settings.RGBElements, i)
+        end
+    end
+end)
+
+-- [ LÓGICA DE INIMIGO ]
+local function IsEnemy(player)
+    if not player or player == LocalPlayer then return false end
+    
+    if not Settings.AutoTeamCheck then
+        return true
+    end
+
+    if not player.Team or not LocalPlayer.Team then 
+        return true
+    end
+
+    local myTeam = LocalPlayer.Team.Name
+    local targetTeam = player.Team.Name
+
+    if game.PlaceId == 155615604 or Workspace:FindFirstChild("Remote") then
+        if myTeam == "Guards" then
+            return (targetTeam == "Inmates" or targetTeam == "Criminals")
+        elseif myTeam == "Inmates" or myTeam == "Criminals" then
+            return (targetTeam == "Guards")
+        end
+    end
+
+    return myTeam ~= targetTeam
+end
+
+-- [ WALL CHECK ]
+local function IsVisible(targetPart)
+    if not targetPart or not targetPart.Parent then return false end
+    local char = LocalPlayer.Character
+    if not char then return false end
+    local origin = Camera.CFrame.Position
+    local destination = targetPart.Position
+    local direction = (destination - origin)
+    local raycastParams = RaycastParams.new()
+    raycastParams.FilterDescendantsInstances = {char, Camera}
+    raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+    local raycastResult = Workspace:Raycast(origin, direction, raycastParams)
+    if raycastResult then
+        return raycastResult.Instance:IsDescendantOf(targetPart.Parent)
+    end
+    return true
+end
+
+-- [ INTERFACE ]
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "AimbotHub_V4_5"
+ScreenGui.ResetOnSpawn = false
+pcall(function() ScreenGui.Parent = CoreGui end)
+if not ScreenGui.Parent then ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui") end
+
+-- FOV Visual
+local FOVFrame = Instance.new("Frame")
+FOVFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+FOVFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+FOVFrame.Size = UDim2.new(0, Settings.FOVRadius * 2, 0, Settings.FOVRadius * 2)
+FOVFrame.BackgroundTransparency = 1
+FOVFrame.Visible = Settings.FOVVisible
+FOVFrame.Parent = ScreenGui
+local FOVStroke = Instance.new("UIStroke", FOVFrame)
+FOVStroke.Thickness = 2
+ApplyRGB(FOVStroke, "Color")
+Instance.new("UICorner", FOVFrame).CornerRadius = UDim.new(1, 0)
+
+-- Painel Principal
+local MainPanel = Instance.new("Frame")
+MainPanel.Size = UDim2.new(0, 220, 0, 320)
+MainPanel.Position = UDim2.new(0.5, -110, 0.5, -160)
+MainPanel.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+MainPanel.Visible = false
+MainPanel.Active = true
+MainPanel.Parent = ScreenGui
+
+local BackgroundImage = Instance.new("ImageLabel")
+BackgroundImage.Size = UDim2.new(1, 0, 1, 0)
+BackgroundImage.Position = UDim2.new(0, 0, 0, 0)
+BackgroundImage.BackgroundTransparency = 1
+BackgroundImage.Image = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663340084125/JXBONAZoBmLfPwNL.png"
+BackgroundImage.ImageTransparency = 0.6
+BackgroundImage.ScaleType = Enum.ScaleType.Crop
+BackgroundImage.ZIndex = 10
+BackgroundImage.Active = false
+BackgroundImage.Parent = MainPanel
+
+Instance.new("UICorner", MainPanel).CornerRadius = UDim.new(0, 12)
+Instance.new("UICorner", BackgroundImage).CornerRadius = UDim.new(0, 12)
+local MainStroke = Instance.new("UIStroke", MainPanel)
+MainStroke.Thickness = 2
+ApplyRGB(MainStroke, "Color")
+
+-- Título
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, 0, 0, 40)
+Title.Text = "AIMBOT HUB V4.5"
+Title.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+Title.BackgroundTransparency = 0
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 14
+Title.Parent = MainPanel
+Instance.new("UICorner", Title).CornerRadius = UDim.new(0, 12)
+
+-- Créditos (ALTERADO PARA ANÔNIMO)
+local CreditLabel = Instance.new("TextLabel")
+CreditLabel.Size = UDim2.new(1, 0, 0, 25)
+CreditLabel.Position = UDim2.new(0, 0, 0, 40)
+CreditLabel.Text = "CRIADO POR ANÔNIMO"  -- ALTERADO AQUI
+CreditLabel.BackgroundTransparency = 1
+CreditLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+CreditLabel.Font = Enum.Font.GothamBold
+CreditLabel.TextSize = 12
+CreditLabel.Parent = MainPanel
+ApplyRGB(CreditLabel, "TextColor3")
+
+-- Botão Ω
+local ToggleBtn = Instance.new("TextButton")
+ToggleBtn.Size = UDim2.new(0, 50, 0, 50)
+ToggleBtn.Position = UDim2.new(0, 20, 0, 150)
+ToggleBtn.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
+ToggleBtn.Text = "Ω"
+ToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+ToggleBtn.Font = Enum.Font.GothamBold
+ToggleBtn.TextSize = 24
+ToggleBtn.Parent = ScreenGui
+Instance.new("UICorner", ToggleBtn).CornerRadius = UDim.new(0, 12)
+local ToggleStroke = Instance.new("UIStroke", ToggleBtn)
+ToggleStroke.Thickness = 2
+ApplyRGB(ToggleStroke, "Color")
+
+-- Arraste
+local function MakeDraggable(obj)
+    local dragging, dragInput, dragStart, startPos
+    obj.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = obj.Position
+        end
+    end)
+    obj.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            local delta = input.Position - dragStart
+            obj.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+    obj.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
+        end
+    end)
+end
+MakeDraggable(ToggleBtn)
+MakeDraggable(MainPanel)
+
+ToggleBtn.MouseButton1Click:Connect(function()
+    MainPanel.Visible = not MainPanel.Visible
+end)
+
+-- Container
+local Container = Instance.new("ScrollingFrame")
+Container.Size = UDim2.new(1, -20, 1, -80)
+Container.Position = UDim2.new(0, 10, 0, 70)
+Container.BackgroundTransparency = 1
+Container.CanvasSize = UDim2.new(0, 0, 0, 220)
+Container.ScrollBarThickness = 0
+Container.Parent = MainPanel
+local UIList = Instance.new("UIListLayout", Container)
+UIList.Padding = UDim.new(0, 8)
+UIList.HorizontalAlignment = Enum.HorizontalAlignment.Center
+
+-- Criador de Botões
+local function CreateButton(text, callback)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, 0, 0, 35)
+    btn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    btn.BackgroundTransparency = 0
+    btn.Text = text
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.Font = Enum.Font.GothamSemibold
+    btn.TextSize = 12
+    btn.Parent = Container
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
+    local stroke = Instance.new("UIStroke", btn)
+    stroke.Thickness = 1
+    stroke.Color = Color3.fromRGB(60, 60, 60)
+    
+    btn.MouseButton1Click:Connect(function()
+        callback(btn)
+    end)
+    return btn
+end
+
+-- [ BOTÕES ]
+CreateButton("AIMBOT: OFF", function(btn)
+    Settings.AimbotEnabled = not Settings.AimbotEnabled
+    btn.Text = Settings.AimbotEnabled and "AIMBOT: ON" or "AIMBOT: OFF"
+    btn.TextColor3 = Settings.AimbotEnabled and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 255, 255)
+end)
+
+CreateButton("ESP ELITE: OFF", function(btn)
+    Settings.ESPEnabled = not Settings.ESPEnabled
+    btn.Text = Settings.ESPEnabled and "ESP ELITE: ON" or "ESP ELITE: OFF"
+    btn.TextColor3 = Settings.ESPEnabled and Color3.fromRGB(0, 255, 255) or Color3.fromRGB(255, 255, 255)
+end)
+
+CreateButton("AUTO TEAM CHECK: OFF", function(btn)
+    Settings.AutoTeamCheck = not Settings.AutoTeamCheck
+    btn.Text = Settings.AutoTeamCheck and "AUTO TEAM CHECK: ON" or "AUTO TEAM CHECK: OFF"
+    btn.TextColor3 = Settings.AutoTeamCheck and Color3.fromRGB(255, 100, 255) or Color3.fromRGB(255, 255, 255)
+    
+    StarterGui:SetCore("SendNotification", {
+        Title = "AIMBOT HUB",
+        Text = Settings.AutoTeamCheck and "Reconhecimento de Equipe Ativado!" or "Modo Todos Contra Todos Ativado!",
+        Duration = 2
+    })
+end)
+
+CreateButton("VISUAL FOV: ON", function(btn)
+    Settings.FOVVisible = not Settings.FOVVisible
+    FOVFrame.Visible = Settings.FOVVisible
+    btn.Text = Settings.FOVVisible and "VISUAL FOV: ON" or "VISUAL FOV: OFF"
+end)
+
+-- [ LOOP PRINCIPAL ]
+local PlayerESP = {}
+local function CreateESP(player)
+    if player == LocalPlayer then return end
+    local highlight = Instance.new("Highlight")
+    highlight.FillTransparency = 0.5
+    highlight.OutlineTransparency = 0
+    highlight.FillColor = Color3.fromRGB(255, 0, 0)
+    highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+    local billboard = Instance.new("BillboardGui")
+    billboard.Size = UDim2.new(4, 0, 0.5, 0)
+    billboard.AlwaysOnTop = true
+    billboard.ExtentsOffset = Vector3.new(0, 3, 0)
+    billboard.Enabled = false
+    billboard.Parent = ScreenGui
+    local healthBg = Instance.new("Frame")
+    healthBg.Size = UDim2.new(1, 0, 1, 0)
+    healthBg.BackgroundColor3 = Color3.fromRGB(50, 0, 0)
+    healthBg.Parent = billboard
+    Instance.new("UICorner", healthBg).CornerRadius = UDim.new(0, 4)
+    local healthBar = Instance.new("Frame")
+    healthBar.Size = UDim2.new(1, 0, 1, 0)
+    healthBar.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+    healthBar.Parent = healthBg
+    Instance.new("UICorner", healthBar).CornerRadius = UDim.new(0, 4)
+    PlayerESP[player] = {Highlight = highlight, Billboard = billboard, HealthBar = healthBar}
+end
+Players.PlayerAdded:Connect(CreateESP)
+Players.PlayerRemoving:Connect(function(p) PlayerESP[p] = nil end)
+for _, p in pairs(Players:GetPlayers()) do CreateESP(p) end
+
+RunService.RenderStepped:Connect(function()
+    local closest = nil
+    local maxDist = Settings.FOVRadius
+    FOVFrame.Size = UDim2.new(0, Settings.FOVRadius * 2, 0, Settings.FOVRadius * 2)
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild(Settings.TargetPart) then
+            local humanoid = p.Character:FindFirstChild("Humanoid")
+            if humanoid and humanoid.Health > 0 and IsEnemy(p) then
+                if Settings.AimbotEnabled then
+                    local part = p.Character[Settings.TargetPart]
+                    local pos, onScreen = Camera:WorldToViewportPoint(part.Position)
+                    if onScreen then
+                        local dist = (Vector2.new(pos.X, pos.Y) - Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)).Magnitude
+                        if dist < maxDist and IsVisible(part) then
+                            maxDist = dist
+                            closest = part
+                        end
+                    end
+                end
+                local objects = PlayerESP[p]
+                if objects and Settings.ESPEnabled then
+                    objects.Highlight.Parent = p.Character
+                    objects.Highlight.Enabled = true
+                    objects.Billboard.Adornee = p.Character:FindFirstChild("Head")
+                    objects.Billboard.Enabled = true
+                    objects.HealthBar.Size = UDim2.new(humanoid.Health / humanoid.MaxHealth, 0, 1, 0)
+                    objects.HealthBar.BackgroundColor3 = Color3.fromHSV((humanoid.Health / humanoid.MaxHealth) * 0.3, 1, 1)
+                elseif objects then
+                    objects.Highlight.Enabled = false
+                    objects.Billboard.Enabled = false
+                end
+            elseif PlayerESP[p] then
+                PlayerESP[p].Highlight.Enabled = false
+                PlayerESP[p].Billboard.Enabled = false
+            end
+        end
+    end
+    if closest and Settings.AimbotEnabled then
+        Camera.CFrame = CFrame.lookAt(Camera.CFrame.Position, closest.Position)
+    end
+end)
+
+StarterGui:SetCore("SendNotification", {
+    Title = "AIMBOT HUB V4.5",
+    Text = "CRIADO POR ANÔNIMO - Versão Clean!",
+    Duration = 5
+})
